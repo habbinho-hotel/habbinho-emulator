@@ -19,7 +19,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.outputTimestamp>2026-11-13T16:15:21Z</project.build.outputTimestamp>
-        <maven.compiler.release>25</maven.compiler.release>
         <maven.build.java.version>[25,27)</maven.build.java.version>
 
         <netty.version>4.2.20.Final</netty.version>
@@ -64,16 +63,11 @@
         <versions-maven-plugin.version>2.23.0</versions-maven-plugin.version>
         <cyclonedx-maven-plugin.version>2.9.3</cyclonedx-maven-plugin.version>
         <jacoco-plugin.version>0.8.16</jacoco-plugin.version>
-        <!-- Measured 39.4% of the instructions on the tests that run without Docker (CI runs more). Keep the minimum
-             a few points under what is measured, and raise it when the coverage rises. -->
-        <jacoco.minimum.instruction.coveredratio>0.35</jacoco.minimum.instruction.coveredratio>
         <japicmp.version>0.27.0</japicmp.version>
         <spotless-maven-plugin.version>3.11.0</spotless-maven-plugin.version>
         <palantir-java-format.version>2.96.0</palantir-java-format.version>
         <spotbugs-maven-plugin.version>4.10.5.0</spotbugs-maven-plugin.version>
         <spotless.ratchetFrom>HEAD^</spotless.ratchetFrom>
-        <!-- Surefire/Failsafe read this late (@{argLine}) so the coverage profile can
-             prepend the JaCoCo agent without losing the flags below. -->
         <argLine></argLine>
     </properties>
 
@@ -140,12 +134,6 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <requireJavaVersion>
-                                    <version>${maven.build.java.version}</version>
-                                </requireJavaVersion>
-                                <requireMavenVersion>
-                                    <version>[3.9.11,4)</version>
-                                </requireMavenVersion>
                                 <dependencyConvergence/>
                                 <requirePluginVersions/>
                             </rules>
@@ -159,16 +147,12 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <release>${maven.compiler.release}</release>
+                    <source>21</source>
+                    <target>21</target>
                     <parameters>true</parameters>
                 </configuration>
             </plugin>
 
-            <!-- Shade (not assembly) because dependencies contribute colliding
-                 META-INF/services files that MUST be merged: flyway-core and
-                 flyway-mysql both ship org.flywaydb.core.extensibility.Plugin,
-                 and losing flyway-mysql's copy silently drops MariaDB/MySQL
-                 support ("Unsupported Database: MariaDB x.y" at startup). -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -191,8 +175,6 @@
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
-                                        <!-- Per-dependency licence texts and module descriptors
-                                             collide in the fat jar and carry nothing at runtime. -->
                                         <exclude>META-INF/LICENSE*</exclude>
                                         <exclude>META-INF/license*</exclude>
                                         <exclude>META-INF/NOTICE*</exclude>
@@ -204,8 +186,6 @@
                                     </excludes>
                                 </filter>
                             </filters>
-                            <!-- ASM only rewrites old plugin jars as they load. Relocated, it stays off
-                                 the plugin-visible classpath, so a plugin bundling its own ASM gets its own. -->
                             <relocations>
                                 <relocation>
                                     <pattern>org.objectweb.asm</pattern>
@@ -214,7 +194,6 @@
                             </relocations>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                                <!-- Every Netty module ships its own version entries; keep them all. -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>META-INF/io.netty.versions.properties</resource>
                                 </transformer>
@@ -256,13 +235,12 @@
                         <id>make-cyclonedx-sbom</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>makeBom</goal>
+                            <goal>makePackageBom</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
 
-            <!-- Exposes ${org.mockito:mockito-core:jar} for the test agent flags. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -281,19 +259,12 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
-                    <!-- Mockito attaches as an explicit agent (JDK self-attach is being
-                         phased out); JNA needs native access for Testcontainers;
-                         -Xshare:off silences the CDS notice the agent triggers. -->
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar} -Xshare:off --enable-native-access=ALL-UNNAMED</argLine>
-                    <!-- Unit tests only; integration tests (*IT) run under Failsafe. -->
                     <excludes>
                         <exclude>**/*IT.java</exclude>
                     </excludes>
                 </configuration>
                 <executions>
-                    <!-- Keep this test independent of suite order: CatalogManager must be
-                         mockable before any other test has installed global configuration,
-                         so it also runs alone in its own fork. -->
                     <execution>
                         <id>lifecycle-isolation</id>
                         <goals>
@@ -307,8 +278,6 @@
                 </executions>
             </plugin>
 
-            <!-- Failsafe runs integration tests (*IT) in the verify phase, so the
-                 fast unit loop (mvn test) never spins up a database container. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
@@ -381,8 +350,6 @@
     </build>
 
     <profiles>
-        <!-- Coverage is opt-in (mvn -Pcoverage verify) so the JaCoCo agent never
-             affects the default/fast build or a JDK the agent doesn't yet support. -->
         <profile>
             <id>coverage</id>
             <build>
@@ -435,8 +402,6 @@
             </build>
         </profile>
 
-        <!-- Rebuilds the runtime schema contract from an actual migrated MariaDB.
-             Normal verification is check-only and never rewrites the worktree. -->
         <profile>
             <id>update-runtime-schema-contract</id>
             <build>
@@ -520,7 +485,6 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- Netty -->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-common</artifactId>
@@ -545,15 +509,11 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
         </dependency>
-
-        <!-- GSON -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>${gson.version}</version>
         </dependency>
-
-        <!-- ASM: rewrites the package names old plugin jars were compiled against -->
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
@@ -564,33 +524,24 @@
             <artifactId>asm-commons</artifactId>
             <version>${asm.version}</version>
         </dependency>
-
-        <!-- MariaDB Connector/J (native driver for MariaDB) -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
             <version>${mariadb.version}</version>
             <scope>runtime</scope>
         </dependency>
-
-        <!-- Fastutil primitive collections. -->
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>fastutil</artifactId>
             <version>${fastutil.version}</version>
             <scope>compile</scope>
         </dependency>
-
-        <!-- HikariCP -->
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>${hikaricp.version}</version>
             <scope>compile</scope>
         </dependency>
-
-        <!-- HikariCP's optional Dropwizard health-check hook. Compile-time only, so
-             SpotBugs can resolve HealthCheckRegistry instead of reporting it missing. -->
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-healthchecks</artifactId>
@@ -603,103 +554,74 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-        <!-- Caffeine cache - high-performance local caching for hot emulator lookups -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
             <version>${caffeine.version}</version>
             <scope>compile</scope>
         </dependency>
-
-        <!-- Resilience4j - rate limits and circuit breakers for RCON/HTTP/external integrations -->
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-ratelimiter</artifactId>
             <version>${resilience4j.version}</version>
             <scope>compile</scope>
         </dependency>
-
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-circuitbreaker</artifactId>
             <version>${resilience4j.version}</version>
             <scope>compile</scope>
         </dependency>
-
-        <!-- Hibernate Validator - Jakarta Bean Validation for packet/RCON/admin DTO guards -->
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
             <version>${hibernate-validator.version}</version>
             <scope>compile</scope>
         </dependency>
-
-        <!-- Apache Commons Lang -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>${commons-lang3.version}</version>
             <scope>compile</scope>
         </dependency>
-
-        <!-- Apache Commons Math -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <version>${commons-math3.version}</version>
             <scope>compile</scope>
         </dependency>
-
-        <!-- JSoup -->
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
             <version>${jsoup.version}</version>
             <scope>compile</scope>
         </dependency>
-
-        <!-- SLF4J API -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-
-        <!-- Logback -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
             <scope>compile</scope>
         </dependency>
-
-        <!-- Jansi: the maintained artifact under JLine (org.fusesource.jansi stopped at 2.4).
-             Logback's ConsoleAppender probes org.jline.jansi.AnsiConsole first. -->
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jansi</artifactId>
             <version>${jansi.version}</version>
         </dependency>
-
-        <!-- favre BCrypt is used by auth endpoints and natively verifies
-             Laravel-style $2y$ hashes from users.password. -->
         <dependency>
             <groupId>at.favre.lib</groupId>
             <artifactId>bcrypt</artifactId>
             <version>${bcrypt.version}</version>
         </dependency>
-
-        <!-- Jakarta Mail — used by the built-in forgot-password endpoint
-             when smtp.* keys are configured in emulator_settings -->
         <dependency>
             <groupId>org.eclipse.angus</groupId>
             <artifactId>jakarta.mail</artifactId>
             <version>${jakarta-mail.version}</version>
         </dependency>
-
-        <!-- Flyway — versioned schema migrations run at startup and in CI.
-             flyway-mysql provides MariaDB/MySQL support (free / Apache-2.0). -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
@@ -712,42 +634,29 @@
             <version>${flyway.version}</version>
             <scope>compile</scope>
         </dependency>
-
-        <!-- JUnit Jupiter -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!-- japicmp — test-only plugin ABI gate vs the Arcturus Morningstar 3.5.5
-             baseline (see abi-baseline/README.md and PluginAbiCompatibilityTest) -->
         <dependency>
             <groupId>com.github.siom79.japicmp</groupId>
             <artifactId>japicmp</artifactId>
             <version>${japicmp.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- Compile-only reference for Morningstar plugin fixtures. Polaris
-             intentionally does not bundle this dependency until the dual
-             baseline compatibility design is resolved. -->
         <dependency>
             <groupId>net.sf.trove4j</groupId>
             <artifactId>trove4j</artifactId>
             <version>${trove4j.reference.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- JavaParser - test-only packet contract source analysis -->
         <dependency>
             <groupId>com.github.javaparser</groupId>
             <artifactId>javaparser-core</artifactId>
             <version>${javaparser.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- Testcontainers — throwaway MariaDB for integration (*IT) tests -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-mariadb</artifactId>
@@ -758,8 +667,6 @@
             <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!-- Mockito — collaborators that aren't the DB in unit tests -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>

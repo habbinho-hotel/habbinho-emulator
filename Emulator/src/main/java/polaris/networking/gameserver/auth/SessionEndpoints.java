@@ -601,9 +601,9 @@ final class SessionEndpoints {
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
             // The account, its currencies and its template room are written together or not at all.
             conn.setAutoCommit(false);
-            boolean created;
+            int newUserId;
             try {
-                created = registerInTransaction(
+                newUserId = registerInTransaction(
                         ctx, req, conn, config, ip, username, email, password, figure, gender, templateId);
                 conn.commit();
             } catch (Exception e) {
@@ -611,18 +611,35 @@ final class SessionEndpoints {
                 throw e;
             }
 
-            if (!created) {
+            if (newUserId <= 0) {
                 return;
             }
 
             AvailabilityCache.invalidateEmail(email);
             AvailabilityCache.invalidateUsername(username);
 
+            // Generate and store an SSO ticket so the user can log in via WebSocket immediately after registration.
+            String ssoTicket = AuthHttpUtil.mintSsoTicket();
+            Timestamp ssoExpiry = newSsoTicketExpiry();
+
+            try (PreparedStatement upd = conn.prepareStatement(
+                    "UPDATE users SET auth_ticket = ?, auth_ticket_expires_at = ?, ip_current = ? WHERE id = ? LIMIT 1")) {
+                upd.setString(1, ssoTicket);
+                upd.setTimestamp(2, ssoExpiry);
+                upd.setString(3, ip == null ? "" : ip);
+                upd.setInt(4, newUserId);
+                upd.executeUpdate();
+            }
+            // The connection is still in manual-commit mode after the block above.
+            conn.commit();
+
             JsonObject ok = new JsonObject();
             ok.addProperty(
                     "message",
                     "Welcome aboard, " + username
                             + "! Your account is ready — log in below with the password you just chose.");
+            ok.addProperty("ssoTicket", ssoTicket);
+            ok.addProperty("ssoTicketExpiresAt", ssoExpiry.toInstant().getEpochSecond());
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (Exception e) {
             LOGGER.error("Register query failed for username=" + AuthHttpUtil.forLog(username), e);
@@ -630,8 +647,8 @@ final class SessionEndpoints {
         }
     }
 
-    /** @return whether the account was created; false when a response explaining why not was already sent. */
-    private static boolean registerInTransaction(
+    /** @return the id of the account created; 0 when a response explaining why not was already sent. */
+    private static int registerInTransaction(
             ChannelHandlerContext ctx,
             FullHttpRequest req,
             Connection conn,
@@ -647,7 +664,7 @@ final class SessionEndpoints {
         // The same list a rename is checked against: a reserved or forbidden name could be taken by registering it.
         if (AccountChangeEndpoints.isUsernameBanned(conn, username)) {
             sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload("That username is not allowed."));
-            return false;
+            return 0;
         }
 
         int maxPerIp = config.getInt("register.max_per_ip", 5);
@@ -659,7 +676,7 @@ final class SessionEndpoints {
                     req,
                     HttpResponseStatus.TOO_MANY_REQUESTS,
                     errorPayload("This IP has reached the maximum of " + maxPerIp + " registered accounts."));
-            return false;
+            return 0;
         }
         if (maxPerIp > 0 && ip != null && !ip.isEmpty()) {
             try (PreparedStatement quota = conn.prepareStatement("SELECT COUNT(*) FROM users WHERE ip_register = ?")) {
@@ -672,7 +689,7 @@ final class SessionEndpoints {
                                 HttpResponseStatus.TOO_MANY_REQUESTS,
                                 errorPayload(
                                         "This IP has reached the maximum of " + maxPerIp + " registered accounts."));
-                        return false;
+                        return 0;
                     }
                 }
             }
@@ -693,7 +710,7 @@ final class SessionEndpoints {
                     else if (userTaken) message = "That Habbo name is already in use.";
                     else message = "That email address is already in use.";
                     sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload(message));
-                    return false;
+                    return 0;
                 }
             }
         }
@@ -768,7 +785,7 @@ final class SessionEndpoints {
         }
 
         AuthRateLimiter.recordRegistration(ip);
-        return true;
+        return newUserId;
     }
 
     /** The least time between two reset mails for the same account. */
