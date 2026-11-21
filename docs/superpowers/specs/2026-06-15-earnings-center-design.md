@@ -1,5 +1,7 @@
 # Earnings Center Design
 
+> **Design history.** See the [current packet contract](../../earnings-packet-contract.md) and [implementation](../../../Emulator/src/main/java/polaris/hotel/earnings/EarningsCenterManager.java) for the shipped feature.
+
 ## Goal
 
 Add an emulator-owned rewards hub for the "Guadagni" UI. The client and renderer may decide how it looks, but the emulator must own reward amounts, claim eligibility, cooldowns, and anti-abuse checks.

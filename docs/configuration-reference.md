@@ -14,12 +14,12 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `db.integrity.audit.mode` | string | `warn` | — | yes | no | Startup integrity-audit setting. |
 | `db.integrity.audit.query_timeout_seconds` | integer | `0` | — | yes | no | Startup integrity-audit setting. |
 | `db.integrity.audit.sample_limit` | integer | `0` | — | yes | no | Startup integrity-audit setting. |
-| `db.migrate.on_startup` | boolean | `false` | `DB_MIGRATE_ON_STARTUP` | yes | no | Database startup setting. |
-| `db.migrations.backup.directory` | string | `` | — | yes | no | Migration backup setting. |
-| `db.migrations.backup.enabled` | boolean | `false` | — | yes | no | Migration backup setting. |
-| `db.migrations.backup.executable` | string | `` | — | yes | no | Migration backup setting. |
-| `db.migrations.backup.keep` | integer | `0` | — | yes | no | Migration backup setting. |
-| `db.migrations.backup.timeout_seconds` | integer | `0` | — | yes | no | Migration backup setting. |
+| `db.migrate.on_startup` | boolean | `true` | `DB_MIGRATE_ON_STARTUP` | yes | no | Database startup setting. |
+| `db.migrations.backup.directory` | string | `backups/database` | — | yes | no | Migration backup setting. |
+| `db.migrations.backup.enabled` | boolean | `true` | — | yes | no | Migration backup setting. |
+| `db.migrations.backup.executable` | string | `mariadb-dump` | — | yes | no | Migration backup setting. |
+| `db.migrations.backup.keep` | integer | `7` | — | yes | no | Migration backup setting. |
+| `db.migrations.backup.timeout_seconds` | integer | `900` | — | yes | no | Migration backup setting. |
 | `db.params` | string | `` | `DB_PARAMS` | yes | no | Database startup setting. |
 | `db.password` | string | `` | `DB_PASSWORD` | yes | no | Database startup setting. |
 | `db.persistence.queue.capacity` | integer | `0` | — | yes | no | Persistence queue override; zero uses the selected operational profile. |

@@ -38,7 +38,7 @@ Use `docs/FURNI_IMPORT_PIPELINE.md` as the canonical cross-project acceptance pr
 - the `.swf` when the deployment requires legacy assets;
 - correct redeemable-credit logic when the classname encodes currency.
 
-Validate the exact staged database/export and Nitro assets with `scripts/verify-furni-import.sh` or `.ps1`. Archive the JSON report. Exit `0` means consistent, `1` means findings, and `2` means the audit could not run. CI always uploads `Emulator/target/furni-consistency-fixture.json`; inspect that artifact when the gate fails. Never accept a database-only or files-only import.
+Validate the exact staged database/export and Nitro assets with `scripts/verify-furni-import.sh` or `.ps1`. Save the JSON report with the import. Exit `0` means consistent, `1` means findings, and `2` means the audit could not run. `FurniConsistencyReportArtifactTest` writes its fixture report to `Emulator/target/furni-consistency-fixture.json`.
 
 ## E2E and behavioral fixtures
 

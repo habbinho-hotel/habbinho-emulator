@@ -2,10 +2,13 @@
 
 Polaris is a fork of [Arcturus Community](https://git.krews.org/morningstar/Arcturus-Community) and is completely independently developed and has no ties to Krews / Team Morningstar
 
-**Polaris** is a complete, self-contained hotel package: a modern Java game
-server (formerly known as *Arcturus Morningstar Extended*), the Octane browser
-client, a ready-to-import database and all the assets needed to bring a hotel
-online.
+This repository contains **Polaris**, the Java game server for Habbinho. For
+the complete hotel, start with [hotel-stack](https://github.com/habbinho-hotel/hotel-stack).
+The Octane browser client and game assets live in [habbinho-client](https://github.com/habbinho-hotel/habbinho-client)
+and [hotel-gamedata](https://github.com/habbinho-hotel/hotel-gamedata).
+
+See the [documentation index](docs/README.md) for configuration, contribution,
+and integration guides.
 
 > ### 📢 Disclaimer
 > This repository is provided as an educational resource for learning purposes

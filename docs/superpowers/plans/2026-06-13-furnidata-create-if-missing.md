@@ -1,5 +1,7 @@
 # Furnidata create-if-missing (upsert) — Implementation Plan
 
+> **Historical plan.** See the [current handler](../../../Emulator/src/main/java/polaris/messages/incoming/furnieditor/FurniEditorUpdateFurnidataEvent.java), [writer tests](../../../Emulator/src/test/java/polaris/hotel/items/FurnidataWriterTest.java), and [development setup](../../../CONTRIBUTING.md#development-setup).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement task-by-task. Steps use checkbox (`- [ ]`).
 
 **Goal:** Let the Furni Editor create a complete furnidata entry for a furni that has none, by making the existing `FurniEditorUpdateFurnidata` (10046) handler an upsert.

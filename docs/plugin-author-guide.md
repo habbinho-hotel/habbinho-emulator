@@ -67,10 +67,10 @@ edit.
 
 ## Bundled dependency policy
 
-The assembled jar currently keeps `netty-all` on the plugin-visible classpath.
-Slimming that surface would require the precompiled plugin corpus to prove
-compatibility first. The same rule keeps `resilience4j-circuitbreaker` even
-where Polaris has no direct import.
+The assembled jar includes the Netty modules declared in the
+[POM](../Emulator/pom.xml). Verify changes to bundled dependencies against the
+precompiled plugin fixtures and the assembled jar. The package also retains
+`resilience4j-circuitbreaker` for plugin compatibility.
 
 Polaris deliberately uses Hibernate Validator without an Expression Language
 implementation and configures `ParameterMessageInterpolator`; plugins must not

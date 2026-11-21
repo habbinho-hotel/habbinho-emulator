@@ -22,19 +22,31 @@ Every imported furni must provide, as one reviewed package:
 5. Archive the generated JSON report with the import. Exit code `1` means inconsistencies were found; exit code `2` means the audit itself could not run.
 6. If promotion fails after files were copied, restore the prior `FurnitureData.json` and asset files, then roll back or reverse the database transaction. Never accept a database-only or files-only import.
 
-## Windows command
+## Validate an import
 
-From the emulator repository:
+From the emulator repository, pass your staged database dump (including `items_base`),
+the staged `FurnitureData.json`, and the root of the matching asset export.
+The validator expects bundles under `nitro-assets/bundled/furniture` and icons
+under `swf/dcr/hof_furni/icons` in that export.
+
+```bash
+bash scripts/verify-furni-import.sh \
+  --items-source '/path/to/staged-hotel.sql' \
+  --furniture-data '/path/to/staged-export/FurnitureData.json' \
+  --nitro-root '/path/to/staged-export' \
+  --report 'furni-consistency.json'
+```
 
 ```powershell
 .\scripts\verify-furni-import.ps1 `
-  -ItemsSource '.\Database\Default Database\FullDatabase.sql' `
-  -FurnitureData '..\Nitro-Files\nitro-assets\gamedata\FurnitureData.json' `
-  -NitroRoot '..\Nitro-Files' `
-  -Report '.\reports\furni-consistency.json'
+  -ItemsSource 'C:\path\to\staged-hotel.sql' `
+  -FurnitureData 'C:\path\to\staged-export\FurnitureData.json' `
+  -NitroRoot 'C:\path\to\staged-export' `
+  -Report 'furni-consistency.json'
 ```
 
-Pass `-ItemsJson` when `ItemsSource` is a JSON array/export instead of a MariaDB dump. Pass `-RequireSwf` only for deployments that require legacy SWFs.
+Use `--items-json` (`-ItemsJson` in PowerShell) for a JSON export. Use
+`--require-swf` (`-RequireSwf`) for deployments that serve legacy SWFs.
 
 ## Direct database command
 
@@ -49,10 +61,10 @@ java -cp $jar.FullName `
   --jdbc-url 'jdbc:mariadb://127.0.0.1:3306/habbo' `
   --db-user 'root' `
   --db-password-env 'POLARIS_DB_PASSWORD' `
-  --furniture-data '..\Nitro-Files\nitro-assets\gamedata\FurnitureData.json' `
-  --bundles '..\Nitro-Files\nitro-assets\bundled\furniture' `
-  --icons '..\Nitro-Files\swf\dcr\hof_furni\icons' `
-  --report '.\reports\furni-consistency-live.json'
+  --furniture-data 'C:\path\to\staged-export\FurnitureData.json' `
+  --bundles 'C:\path\to\staged-export\nitro-assets\bundled\furniture' `
+  --icons 'C:\path\to\staged-export\swf\dcr\hof_furni\icons' `
+  --report 'furni-consistency-live.json'
 ```
 
 The CLI never prints the password and performs no database or asset mutation.

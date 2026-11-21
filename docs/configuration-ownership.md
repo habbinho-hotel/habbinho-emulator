@@ -15,3 +15,8 @@ explicit runtime change is authoritative and is saved.
 Subsystem binders support live reload for database-backed hotel settings. Each
 key applies independently; malformed values retain the prior value and do not
 prevent later settings from applying.
+
+The [startup reference](configuration-reference.md) lists the standalone defaults.
+Automatic migrations and pre-migration backup default to enabled. The
+[container entrypoint](../docker/entrypoint.sh) disables the internal backup
+because `hotel-stack` takes the backup in the database container.

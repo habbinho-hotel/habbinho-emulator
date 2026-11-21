@@ -1,6 +1,7 @@
 # Earnings Center Packet Contract
 
-This document is the emulator-side contract for the "Guadagni" UI.
+This document describes the packet layout and server behavior used by Octane's
+Earnings view. The server determines eligibility, reward amounts, and cooldowns.
 
 ## Incoming
 
@@ -42,6 +43,8 @@ This document is the emulator-side contract for the "Guadagni" UI.
       - `int pointsType`
       - `String data`
 
+`nextClaimAt` is a Unix timestamp in seconds. `0` means the server did not send a timer.
+
 ### `EarningsClaimResultComposer`
 
 - Header: `9408`
@@ -66,6 +69,10 @@ This document is the emulator-side contract for the "Guadagni" UI.
 - `bonus_bag`
 - `mystery_boxes`
 - `club_job`
+- `agency`
+
+See [EarningsCategory](../Emulator/src/main/java/polaris/hotel/earnings/EarningsCategory.java)
+for the registered keys.
 
 ## Reward Types
 
@@ -78,12 +85,14 @@ This document is the emulator-side contract for the "Guadagni" UI.
 
 For `points`, `pointsType` carries the currency type. For `badge`, `data` carries the badge code. For `item`, `data` carries the `items_base.id`. Other reward types keep `data` empty.
 
-`marketplace` and `hc_payday` can be native rows. In native mode the amounts come from existing server state:
+Native rows use existing server state:
 
 - `marketplace`: sold marketplace offers waiting for payout
 - `hc_payday`: unclaimed rows in `logs_hc_payday`
-- `achievements`: configured rewards gated by achievement score buckets
-- `level_progress`: configured rewards gated by citizenship/helper talent level
+- `games` and `agency`: unclaimed Wired credits for categories 11 and 13, respectively
+
+`achievements` and `level_progress` use configured rewards. Their native
+eligibility checks use achievement score buckets and citizenship/helper talent levels.
 
 ## Result Status
 
@@ -94,4 +103,7 @@ For `points`, `pointsType` carries the currency type. For `badge`, `data` carrie
 - `no_reward`
 - `error`
 
-The client must not send reward amounts. Claim eligibility and rewards are always server authoritative.
+See [the composer](../Emulator/src/main/java/polaris/messages/outgoing/earnings/EarningsCenterComposer.java)
+and [claim result composer](../Emulator/src/main/java/polaris/messages/outgoing/earnings/EarningsClaimResultComposer.java)
+for serialization, and [EarningsCenterManagerTest](../Emulator/src/test/java/polaris/hotel/earnings/EarningsCenterManagerTest.java)
+for claim behavior.

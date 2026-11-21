@@ -1,5 +1,7 @@
 # Earnings Center Implementation Plan
 
+> **Historical plan.** Use the [current packet contract](../../earnings-packet-contract.md), the [Flyway migration](../../../Emulator/src/main/resources/db/migration/V20260615204100__earnings_center.sql), and the [Habbinho development setup](../../../CONTRIBUTING.md#development-setup).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build an emulator-owned earnings/rewards hub for the new "Guadagni" UI, with server-side reward definitions and claim protection.

@@ -2,9 +2,7 @@
 
 ## Scope
 
-This document inventories the non-wired keys currently stored in `emulator_settings` based on `Default Database/FullDB.sql`. Wired-specific keys are documented separately in `docs/wired_tools_reference.md`.
-
-Each entry below mirrors the comment written by `Database Updates/003_add_comment_column_to_emulator_settings.sql`, so the documentation and in-database comments stay aligned.
+This inventory records non-Wired `emulator_settings` from an earlier database snapshot. For the current schema and seeded defaults, check the [runtime migrations](../Emulator/src/main/resources/db/migration/README.md) and the Java code that reads the key. See also the [Wired settings](wired_tools_reference.md) and [startup settings](configuration-reference.md).
 
 ## Table schema
 
@@ -20,8 +18,7 @@ CREATE TABLE `emulator_settings` (
 ## Inventory summary
 
 - Total non-wired keys documented here: `330`
-- Source of defaults: `Default Database/FullDB.sql`
-- Value type is inferred from the default string stored in SQL.
+- Defaults are the values in the snapshot. Most types were inferred from those values and should be checked against the runtime reader.
 
 ## Group index
 
@@ -423,7 +420,7 @@ Core hotel gameplay, economy, room, catalog and moderation settings.
 | `hotel.gifts.length.max` | `300` | `integer` | Maximum message length allowed on gift notes. |
 | `hotel.gifts.ribbon_types` | `0,1,2,3,4,5,6,7,8,9,10` | `list` | Comma-separated list of ribbon type IDs allowed in the catalog. |
 | `hotel.gifts.special.price` | `10` | `integer` | Credit price used by special gift boxes. |
-| `hotel.home.room` | `0` | `boolean` | Room ID used as the default home room for new users. |
+| `hotel.home.room` | `0` | `integer` | Room ID used as the default home room for new users. |
 | `hotel.inventory.max.items` | `7500` | `integer` | Maximum number of items allowed in one inventory. |
 | `hotel.item.trap.hween14_rare2` | `3000` | `integer` | Configuration value used by `hotel.item.trap.hween14_rare2`. |
 | `hotel.item.trap.hween_c17_handstrap` | `3000` | `integer` | Configuration value used by `hotel.item.trap.hween_c17_handstrap`. |

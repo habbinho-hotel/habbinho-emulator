@@ -1,7 +1,9 @@
 # Furni Editor — create furnidata entry if missing (upsert)
 
+> **Design history.** The upsert shipped with `items.furnidata.create_tier`, default `custom`. The [current handler](../../../Emulator/src/main/java/polaris/messages/incoming/furnieditor/FurniEditorUpdateFurnidataEvent.java) also handles structural edits on existing entries.
+
 **Date:** 2026-06-13
-**Status:** Approved design → implementation
+**Original status:** Approved design → implementation
 **Repos:** Arcturus-Morningstar-Extended (emulator, primary), Nitro-V3 (client, minor)
 
 ## Problem

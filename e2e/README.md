@@ -1,86 +1,62 @@
-# Polaris end-to-end runtime
+# Polaris end-to-end tests
 
-This directory provides the disposable Polaris side of the renderer end-to-end tests. It recreates an isolated schema, imports the Polaris base database, seeds synthetic test data, then starts Polaris on dedicated loopback ports. Normal Polaris startup applies any migrations newer than the base database.
+The fixture starts Polaris on loopback ports and seeds two users, one room, and one
+inventory item. `prepare-database` drops and recreates the named schema on every run.
+Use a disposable MariaDB schema starting with `polaris_e2e_`.
 
-Polaris overlays the `emulator_settings` table on top of `config.ini` once the database connects, so any key present in that table wins. `seed.sql` therefore seeds the listener and session keys the harness depends on — `ws.enabled`, `ws.host`, `ws.port`, `ws.whitelist`, `crypto.ws.enabled`, `enc.enabled`, `client.release.allowed` and `session.reconnect.grace.seconds` — before Polaris starts. The base database ships the legacy aliases `ws.nitro.host` and `ws.nitro.port`, which startup copies into `ws.host`/`ws.port` when those keys are absent; seeding them first keeps the WebSocket listener and the `/__e2e` probe on `E2E_GAME_PORT` instead of the stock `0.0.0.0:2096`. Only `db.*`, `game.*`, `rcon.*` and `e2e.enabled` are genuinely controlled by `config.ini.template`.
+## Setup
 
-The scripts never require production credentials or production data. `prepare-database` only accepts a loopback database host and a database name beginning with `polaris_e2e_`. It deletes and recreates that database on every run.
+Use JDK 25, the Maven wrapper, and a local MariaDB server and client. The
+[renderer scenarios](https://github.com/habbinho-hotel/habbinho-client/blob/main/Octane-Renderer/packages/communication/src/e2e/README.md)
+also use Node.js and Yarn. Set these variables in the shell you will use for both
+the emulator and the renderer.
 
-## Prerequisites
+| Variable | Example |
+| --- | --- |
+| `E2E_DB_HOST`, `E2E_DB_PORT` | `127.0.0.1`, `3306` |
+| `E2E_DB_NAME`, `E2E_DB_USER` | `polaris_e2e_local`, `root` |
+| `E2E_DB_PASSWORD` | Password of the local MariaDB account, if set |
+| `E2E_SSO_TICKET`, `E2E_USER_ID` | `e2e-local-ticket`, `900001` |
+| `E2E_SECOND_SSO_TICKET`, `E2E_SECOND_USER_ID` | `e2e-peer-ticket`, `900003`. Database setup requires the second ticket for all scenarios. |
+| `E2E_ROOM_ID` | `900002` |
+| `E2E_GAME_PORT`, `E2E_RAW_PORT`, `E2E_RCON_PORT` | `31999`, `31998`, `32000` |
+| `E2E_WS_URL`, `E2E_PROBE_URL` | `ws://127.0.0.1:31999`, `http://127.0.0.1:31999/__e2e` |
+| `E2E_RUNTIME_DIR` | Location for generated config, PID, and logs. The Linux example sets it below. |
+| `E2E_MYSQL` | Required by the PowerShell database scripts. Use the MariaDB client name or full path. |
 
-- JDK 25 and Maven
-- a local MariaDB server and command-line client
-- Node.js 22 and Yarn in the companion renderer repository
-- free ports for the WebSocket, raw game server and RCON listeners
-
-Build the emulator first:
-
-```powershell
-mvn -B -f Emulator/pom.xml package -DskipTests
-```
-
-## Environment
-
-The runtime and database scripts share these variables:
-
-| Variable | Example | Purpose |
-| --- | --- | --- |
-| `E2E_MYSQL` | `E:\laragon\bin\mysql\mariadb-12.2.2-winx64\bin\mysql.exe` | Windows MariaDB client path |
-| `E2E_DB_HOST` | `127.0.0.1` | Loopback database host |
-| `E2E_DB_PORT` | `3306` | Database port |
-| `E2E_DB_NAME` | `polaris_e2e_inventory` | Disposable schema |
-| `E2E_DB_USER` | `root` | Local database user |
-| `E2E_DB_PASSWORD` | `root` | Local database password; may be empty |
-| `E2E_SSO_TICKET` | `e2e-inventory-ticket` | Ticket assigned to fixture user `900001` |
-| `E2E_USER_ID` | `900001` | Fixture user used by probes and tests |
-| `E2E_ROOM_ID` | `900002` | Fixture room |
-| `E2E_GAME_PORT` | `31999` | WebSocket listener and HTTP probe; required by `prepare-database` too, which seeds it as `ws.port` |
-| `E2E_RAW_PORT` | `31998` | Raw game listener |
-| `E2E_RCON_PORT` | `32000` | RCON listener |
-| `E2E_WS_URL` | `ws://127.0.0.1:31999` | Renderer WebSocket URL |
-| `E2E_PROBE_URL` | `http://127.0.0.1:31999/__e2e` | Test-only probe root |
-| `E2E_RUNTIME_DIR` | `%TEMP%\polaris-e2e-inventory` | Generated config, PID and logs |
-
-## Windows PowerShell
-
-Set the variables above, then prepare and start Polaris:
-
-```powershell
-./e2e/prepare-database.ps1
-$runtime = "$env:TEMP\polaris-e2e-inventory"
-$process = ./e2e/start-emulator.ps1 -RuntimeDirectory $runtime | ConvertFrom-Json
-```
-
-Run the selected renderer scenario from the renderer repository. For the inventory lifecycle, verify the final database state before stopping the exact process returned by the start script:
-
-```powershell
-yarn test:e2e:inventory
-../emulatore/e2e/verify-inventory-state.ps1
-Stop-Process -Id $process.pid
-```
-
-Use `try` / `finally` around test execution in automation so the recorded PID is always stopped. Do not stop Java processes by name.
+The [seed](seed.sql) sets the WebSocket and session settings in `emulator_settings`.
+These values take precedence over the startup file once Polaris connects to MariaDB.
 
 ## Linux and macOS
 
+From the `habbinho-emulator` root:
+
 ```bash
-mvn -B -f Emulator/pom.xml package -DskipTests
+export E2E_RUNTIME_DIR="$(mktemp -d)"
+./Emulator/mvnw -B -f Emulator/pom.xml package -DskipTests
 bash e2e/prepare-database.sh
 bash e2e/start-emulator.sh
-# Run the renderer scenario from its repository.
-yarn test:e2e:inventory
-bash ../emulatore/e2e/verify-inventory-state.sh
-kill "$(cat "${E2E_RUNTIME_DIR}/polaris.pid")"
 ```
 
-No workflow in this repository currently invokes this harness. It is run with the companion renderer repository when a full client-to-database test is needed.
+Run the renderer scenario in the same shell, then return to the emulator root.
+For the inventory scenario, run `bash e2e/verify-inventory-state.sh` before
+stopping Polaris with `kill "$(cat "$E2E_RUNTIME_DIR/polaris.pid")"`.
 
-## Fixtures and diagnostics
+## Windows PowerShell
 
-- user `900001` authenticates with `E2E_SSO_TICKET`
-- room `900002` is the deterministic room-entry target
-- floor item `900004` starts in user `900001`'s inventory and uses base item `18`
-- the inventory verifier requires item `900004` to finish as `user_id=900001, room_id=0`
-- `polaris.stdout.log` and `polaris.stderr.log` are written below `E2E_RUNTIME_DIR`
+From the `habbinho-emulator` root:
 
-If startup times out, inspect both logs and confirm that ports `31998`, `31999` and `32000` are free. If database preparation fails, confirm that MariaDB is running, the client path is correct and the configured user can create the disposable schema.
+```powershell
+.\Emulator\mvnw.cmd -B -f Emulator/pom.xml package -DskipTests
+.\e2e\prepare-database.ps1
+$runtime = Join-Path ([System.IO.Path]::GetTempPath()) "polaris-e2e-$PID"
+$process = .\e2e\start-emulator.ps1 -RuntimeDirectory $runtime | ConvertFrom-Json
+```
+
+Run the renderer scenario in the same shell, then return to the emulator root.
+For the inventory scenario, run `.\e2e\verify-inventory-state.ps1` before
+stopping Polaris with `Stop-Process -Id $process.pid`.
+
+If startup fails, check `polaris.stdout.log` and `polaris.stderr.log` in the
+runtime directory. Check that the ports are free and the two repositories use
+the same tickets, IDs, and endpoints.

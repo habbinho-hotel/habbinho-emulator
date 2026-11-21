@@ -90,8 +90,6 @@ public final class ConfigRegistry {
                 "db.username",
                 "db.password",
                 "db.params",
-                "db.migrations.backup.directory",
-                "db.migrations.backup.executable",
                 "game.host",
                 "rcon.host",
                 "rcon.allowed",
@@ -112,8 +110,6 @@ public final class ConfigRegistry {
                 "0",
                 true,
                 "db.port",
-                "db.migrations.backup.keep",
-                "db.migrations.backup.timeout_seconds",
                 "db.pool.minsize",
                 "db.pool.maxsize",
                 "db.integrity.audit.sample_limit",
@@ -184,8 +180,6 @@ public final class ConfigRegistry {
                 ConfigKey.ValueType.BOOLEAN,
                 "false",
                 true,
-                "db.migrate.on_startup",
-                "db.migrations.backup.enabled",
                 "enc.enabled",
                 "nitro.secure.assets.enabled",
                 "nitro.secure.api.enabled",
@@ -197,6 +191,12 @@ public final class ConfigRegistry {
                 "stress.enabled",
                 "cms.api.enabled",
                 "e2e.enabled");
+        keys.add(definition("db.migrate.on_startup", ConfigKey.ValueType.BOOLEAN, "true", true));
+        keys.add(definition("db.migrations.backup.enabled", ConfigKey.ValueType.BOOLEAN, "true", true));
+        keys.add(definition("db.migrations.backup.directory", ConfigKey.ValueType.STRING, "backups/database", true));
+        keys.add(definition("db.migrations.backup.executable", ConfigKey.ValueType.STRING, "mariadb-dump", true));
+        keys.add(definition("db.migrations.backup.keep", ConfigKey.ValueType.INTEGER, "7", true));
+        keys.add(definition("db.migrations.backup.timeout_seconds", ConfigKey.ValueType.INTEGER, "900", true));
         keys.add(definition("session.recovery.enabled", ConfigKey.ValueType.BOOLEAN, "false", true));
         keys.add(new ConfigKey(
                 "polaris.events.honor_priority",
