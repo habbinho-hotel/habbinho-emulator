@@ -8,11 +8,13 @@ compatible.
 
 ## Release gate
 
-No release is published unless the source commit has a green `verify` run.
-The release workflow follows a successful CI run on `main`, rebuilds with
-tests, records a SHA-256 checksum, and publishes the runnable jar, SBOM, and
-provenance attestations. Manual dispatch is restricted to `main` and uses the
-same tested build.
+Tag a commit with green CI. A `vX.Y.Z` tag matching the version in
+`Emulator/pom.xml` runs `verify` and publishes the runnable JAR, SHA-256 checksum,
+SBOM and provenance attestations in a GitHub Release.
+
+An `image-vX.Y.Z` tag builds the `linux/amd64` and `linux/arm64` container images
+for `ghcr.io/habbinho-hotel/habbinho-emulator`. The registry receives that tag
+and `sha-<commit>`. The JAR and image tags can be cut independently.
 
 ## Release checklist
 

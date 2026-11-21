@@ -1,0 +1,14 @@
+**
+!Emulator/
+!Emulator/**
+Emulator/target/
+Emulator/config.ini
+Emulator/.env
+Emulator/.env.*
+Emulator/logging/
+Emulator/plugins/
+!config example/
+!config example/config.ini.example
+!docker/
+!docker/entrypoint.sh
+!LICENSE
