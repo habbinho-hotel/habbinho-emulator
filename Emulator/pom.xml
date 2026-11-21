@@ -155,8 +155,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <source>25</source>
-                    <target>25</target>
+                    <release>${maven.compiler.release}</release>
                     <parameters>true</parameters>
                 </configuration>
             </plugin>
@@ -243,7 +242,7 @@
                         <id>make-cyclonedx-sbom</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>makePackageBom</goal>
+                            <goal>makeBom</goal>
                         </goals>
                     </execution>
                 </executions>
